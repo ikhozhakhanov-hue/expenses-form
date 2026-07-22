@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Добавить трату</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, sans-serif;
+      background-color: var(--tg-theme-bg-color, #ffffff);
+      color: var(--tg-theme-text-color, #000000);
+      padding: 16px;
+      margin: 0;
+    }
+    label {
+      display: block;
+      margin-top: 16px;
+      margin-bottom: 4px;
+      font-size: 14px;
+      opacity: 0.7;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      background-color: var(--tg-theme-secondary-bg-color, #f5f5f5);
+      color: var(--tg-theme-text-color, #000000);
+    }
+    button {
+      width: 100%;
+      margin-top: 24px;
+      padding: 14px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      background-color: var(--tg-theme-button-color, #2481cc);
+      color: var(--tg-theme-button-text-color, #ffffff);
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <label for="date">Дата</label>
+  <input type="date" id="date">
+
+  <label for="amount">Сумма</label>
+  <input type="number" id="amount" placeholder="0">
+
+  <label for="account">Счёт</label>
+  <select id="account">
+    <option value="1">Наличные</option>
+    <option value="2">Карта Uzcard</option>
+    <option value="3">Карта Humo</option>
+    <option value="4">Карта Visa</option>
+  </select>
+
+  <label for="category">Категория</label>
+  <select id="category">
+    <optgroup label="Еда">
+      <option value="1">Еда (общее)</option>
+      <option value="8">Кафе и рестораны</option>
+      <option value="9">Продукты</option>
+      <option value="17">Сладости, перекус, попить</option>
+      <option value="18">Обед</option>
+    </optgroup>
+    <optgroup label="Транспорт">
+      <option value="2">Транспорт (общее)</option>
+      <option value="10">Такси</option>
+      <option value="11">Общественный транспорт</option>
+    </optgroup>
+    <optgroup label="Жильё">
+      <option value="3">Жильё (общее)</option>
+      <option value="12">Коммуналка</option>
+      <option value="13">Аренда</option>
+    </optgroup>
+    <optgroup label="Развлечения">
+      <option value="4">Развлечения (общее)</option>
+      <option value="14">Кино и подписки</option>
+      <option value="29">Шопинг</option>
+    </optgroup>
+    <optgroup label="Здоровье">
+      <option value="5">Здоровье (общее)</option>
+      <option value="15">Спортзал</option>
+      <option value="16">Лекарства</option>
+    </optgroup>
+    <optgroup label="Жене">
+      <option value="19">Жене (общее)</option>
+      <option value="20">Обед жене</option>
+      <option value="21">Такси жене</option>
+      <option value="22">Общественный транспорт для жены</option>
+      <option value="25">Кафе и рестораны</option>
+      <option value="26">Сладости, перекус, попить жене</option>
+      <option value="30">Шопинг для жены</option>
+    </optgroup>
+    <optgroup label="Сыну">
+      <option value="23">Сыну (общее)</option>
+      <option value="24">Игрушки сыну</option>
+      <option value="31">Шопинг для сына</option>
+    </optgroup>
+    <optgroup label="Кредиты">
+      <option value="27">Кредиты (общее)</option>
+      <option value="28">Кредиты Uzum</option>
+    </optgroup>
+  </select>
+
+  <label for="description">Описание (необязательно)</label>
+  <input type="text" id="description" placeholder="Например: пообедал на работе">
+
+  <button onclick="submitForm()">Сохранить</button>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+
+    // Автоматически ставим сегодняшнюю дату
+    document.getElementById('date').valueAsDate = new Date();
+
+    function submitForm() {
+      const data = {
+        date: document.getElementById('date').value,
+        amount: document.getElementById('amount').value,
+        account_id: document.getElementById('account').value,
+        category_id: document.getElementById('category').value,
+        description: document.getElementById('description').value
+      };
+
+      tg.sendData(JSON.stringify(data));
+    }
+  </script>
+
+</body>
+</html>
