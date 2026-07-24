@@ -419,72 +419,12 @@
   let currentType = null;
   let currentTab = 'main';
 
-  const accounts = [
-    { id: 1, name: "Наличные" },
-    { id: 2, name: "Карта Uzcard" },
-    { id: 3, name: "Карта Humo" },
-    { id: 4, name: "Карта Visa" },
-  ];
+  const userId = tg.initDataUnsafe?.user?.id;
+  const API_BASE = 'https://api.ostatka.uz';
 
-  const categoryGroups = [
-    { group: "Еда", icon: "🍽", kind: "expense", items: [
-      { id: 1, name: "Еда (общее)" },
-      { id: 8, name: "Кафе и рестораны" },
-      { id: 9, name: "Продукты" },
-      { id: 17, name: "Сладости, перекус, попить" },
-      { id: 18, name: "Обед" },
-    ]},
-    { group: "Транспорт", icon: "🚕", kind: "expense", items: [
-      { id: 2, name: "Транспорт (общее)" },
-      { id: 10, name: "Такси" },
-      { id: 11, name: "Общественный транспорт" },
-    ]},
-    { group: "Жильё", icon: "🏠", kind: "expense", items: [
-      { id: 3, name: "Жильё (общее)" },
-      { id: 12, name: "Коммуналка" },
-      { id: 13, name: "Аренда" },
-    ]},
-    { group: "Развлечения", icon: "🎬", kind: "expense", items: [
-      { id: 4, name: "Развлечения (общее)" },
-      { id: 14, name: "Кино и подписки" },
-      { id: 29, name: "Шопинг" },
-    ]},
-    { group: "Здоровье", icon: "💊", kind: "expense", items: [
-      { id: 5, name: "Здоровье (общее)" },
-      { id: 15, name: "Спортзал" },
-      { id: 16, name: "Лекарства" },
-    ]},
-    { group: "Жене", icon: "👩", kind: "expense", items: [
-      { id: 19, name: "Жене (общее)" },
-      { id: 20, name: "Обед жене" },
-      { id: 21, name: "Такси жене" },
-      { id: 22, name: "Общественный транспорт для жены" },
-      { id: 25, name: "Кафе и рестораны" },
-      { id: 26, name: "Сладости, перекус, попить жене" },
-      { id: 30, name: "Шопинг для жены" },
-    ]},
-    { group: "Сыну", icon: "🧒", kind: "expense", items: [
-      { id: 23, name: "Сыну (общее)" },
-      { id: 24, name: "Игрушки сыну" },
-      { id: 31, name: "Шопинг для сына" },
-    ]},
-    { group: "Кредиты", icon: "🏦", kind: "expense", items: [
-      { id: 27, name: "Кредиты (общее)" },
-      { id: 28, name: "Кредиты Uzum" },
-    ]},
-    { group: "Бизнес с Акромом (расход)", icon: "📉", kind: "expense", items: [
-      { id: 7, name: "Бизнес с Акромом расход (общее)" },
-      { id: 33, name: "Инвестиция в 3Д бизнес с Акромом" },
-    ]},
-    { group: "Зарплата", icon: "💰", kind: "income", items: [
-      { id: 6, name: "Зарплата (общее)" },
-      { id: 32, name: "Зарплата с работы" },
-    ]},
-    { group: "Бизнес с Акромом (доход)", icon: "📈", kind: "income", items: [
-      { id: 34, name: "Бизнес с Акромом доход (общее)" },
-      { id: 35, name: "Доход с 3Д бизнеса с Акромом" },
-    ]},
-  ];
+  let accounts = [];
+  let categoryGroups = [];
+  let categoriesLoadPromise = null;
 
   // ---- Нижняя навигация (Добавить / Главное / Вклады / Аналитика) ----
   function switchTab(tabName) {
@@ -538,25 +478,54 @@
     document.getElementById('category-label').textContent = 'Выбрать категорию';
     document.getElementById('category-label').classList.add('placeholder');
 
+    categoriesLoadPromise = fetchCategories(type);
+
     document.getElementById('sub-type-select').style.display = 'none';
     document.getElementById('sub-form').style.display = 'block';
     document.querySelector('.bottom-nav').style.display = 'none';
     updateNativeButtons();
   }
 
+  async function fetchAccounts() {
+    try {
+      const res = await fetch(`${API_BASE}/accounts?user_id=${userId}`);
+      accounts = await res.json();
+    } catch (err) {
+      accounts = [];
+    }
+    renderAccountList();
+  }
+
+  function renderAccountList() {
+    accountListEl.innerHTML = '';
+    if (!accounts.length) {
+      accountListEl.innerHTML = '<div class="state-msg">Не удалось загрузить счета</div>';
+      return;
+    }
+    accounts.forEach(acc => {
+      const el = document.createElement('div');
+      el.className = 'cat-item';
+      el.innerHTML = `<span class="left"><span>${acc.name}</span></span>`;
+      el.onclick = () => {
+        selectedAccount = acc.id;
+        document.getElementById('account-label').textContent = acc.name;
+        document.getElementById('account-label').classList.remove('placeholder');
+        closeSheet('account');
+      };
+      accountListEl.appendChild(el);
+    });
+  }
+
   const accountListEl = document.getElementById('account-list');
-  accounts.forEach(acc => {
-    const el = document.createElement('div');
-    el.className = 'cat-item';
-    el.innerHTML = `<span class="left"><span class="cat-icon">💳</span><span>${acc.name}</span></span>`;
-    el.onclick = () => {
-      selectedAccount = acc.id;
-      document.getElementById('account-label').textContent = acc.name;
-      document.getElementById('account-label').classList.remove('placeholder');
-      closeSheet('account');
-    };
-    accountListEl.appendChild(el);
-  });
+
+  async function fetchCategories(kind) {
+    try {
+      const res = await fetch(`${API_BASE}/categories?user_id=${userId}&kind=${kind}`);
+      categoryGroups = await res.json();
+    } catch (err) {
+      categoryGroups = [];
+    }
+  }
 
   const categoryListEl = document.getElementById('category-list');
   const categorySheetTitle = document.getElementById('category-sheet-title');
@@ -564,21 +533,35 @@
   function renderCategoryGroups() {
     categorySheetTitle.textContent = 'Категория';
     categoryListEl.innerHTML = '';
-    const groups = categoryGroups.filter(g => g.kind === currentType);
-    groups.forEach(group => {
+
+    if (!categoryGroups.length) {
+      const msg = document.createElement('div');
+      msg.className = 'state-msg';
+      msg.textContent = 'Пока нет категорий — добавь первую';
+      categoryListEl.appendChild(msg);
+    }
+
+    categoryGroups.forEach(group => {
       const el = document.createElement('div');
       el.className = 'cat-item';
       el.innerHTML = `
-        <span class="left"><span class="cat-icon">${group.icon}</span><span>${group.group}</span></span>
+        <span class="left"><span>${group.name}</span></span>
         <span class="chevron">›</span>
       `;
       el.onclick = () => renderCategoryItems(group);
       categoryListEl.appendChild(el);
     });
+
+    const addEl = document.createElement('div');
+    addEl.className = 'cat-item';
+    addEl.style.color = 'var(--accent-light)';
+    addEl.innerHTML = `<span class="left"><span class="cat-icon">+</span><span>Добавить категорию</span></span>`;
+    addEl.onclick = () => showAddCategoryScreen(null);
+    categoryListEl.appendChild(addEl);
   }
 
   function renderCategoryItems(group) {
-    categorySheetTitle.textContent = group.group;
+    categorySheetTitle.textContent = group.name;
     categoryListEl.innerHTML = '';
 
     const backEl = document.createElement('div');
@@ -587,23 +570,140 @@
     backEl.onclick = renderCategoryGroups;
     categoryListEl.appendChild(backEl);
 
+    const plainEl = document.createElement('div');
+    plainEl.className = 'cat-item';
+    plainEl.innerHTML = `<span class="left"><span>Без уточнения</span></span>`;
+    plainEl.onclick = () => {
+      selectedCategory = group.id;
+      document.getElementById('category-label').textContent = group.name;
+      document.getElementById('category-label').classList.remove('placeholder');
+      closeSheet('category');
+    };
+    categoryListEl.appendChild(plainEl);
+
     group.items.forEach(item => {
       const el = document.createElement('div');
       el.className = 'cat-item';
-      el.innerHTML = `<span class="left"><span class="cat-icon">${group.icon}</span><span>${item.name}</span></span>`;
+      el.innerHTML = `<span class="left"><span>${item.name}</span></span>`;
       el.onclick = () => {
         selectedCategory = item.id;
-        document.getElementById('category-label').textContent = `${group.group} → ${item.name}`;
+        document.getElementById('category-label').textContent = `${group.name} → ${item.name}`;
         document.getElementById('category-label').classList.remove('placeholder');
         closeSheet('category');
       };
       categoryListEl.appendChild(el);
     });
+
+    const addSubEl = document.createElement('div');
+    addSubEl.className = 'cat-item';
+    addSubEl.style.color = 'var(--accent-light)';
+    addSubEl.innerHTML = `<span class="left"><span class="cat-icon">+</span><span>Добавить подкатегорию</span></span>`;
+    addSubEl.onclick = () => showAddCategoryScreen(group);
+    categoryListEl.appendChild(addSubEl);
   }
 
-  function openSheet(name) {
-    if (name === 'category') renderCategoryGroups();
+  async function createCategory(name, parentId, bankId) {
+    await fetch(`${API_BASE}/categories`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: userId,
+        name,
+        kind: currentType,
+        parent_id: parentId,
+        bank_id: bankId
+      })
+    });
+  }
+
+  async function showAddCategoryScreen(parentGroup) {
+    categorySheetTitle.textContent = parentGroup ? `Добавить в «${parentGroup.name}»` : 'Добавить категорию';
+    categoryListEl.innerHTML = '<div class="state-msg">Загрузка…</div>';
+
+    let bankItems = [];
+    try {
+      const url = parentGroup
+        ? `${API_BASE}/category-bank/subs?user_id=${userId}&parent_id=${parentGroup.id}`
+        : `${API_BASE}/category-bank?user_id=${userId}&kind=${currentType}`;
+      const res = await fetch(url);
+      bankItems = await res.json();
+    } catch (err) {
+      bankItems = [];
+    }
+
+    categoryListEl.innerHTML = '';
+
+    const backEl = document.createElement('div');
+    backEl.className = 'back-row';
+    backEl.innerHTML = '‹ Назад';
+    backEl.onclick = () => parentGroup ? renderCategoryItems(parentGroup) : renderCategoryGroups();
+    categoryListEl.appendChild(backEl);
+
+    async function afterAdd() {
+      await fetchCategories(currentType);
+      if (parentGroup) {
+        const refreshed = categoryGroups.find(g => g.id === parentGroup.id) || parentGroup;
+        renderCategoryItems(refreshed);
+      } else {
+        renderCategoryGroups();
+      }
+    }
+
+    if (bankItems.length) {
+      const label = document.createElement('div');
+      label.style.cssText = 'font-size:12px;color:var(--text-dim);margin:6px 4px;';
+      label.textContent = 'Из банка категорий';
+      categoryListEl.appendChild(label);
+
+      bankItems.forEach(item => {
+        const el = document.createElement('div');
+        el.className = 'cat-item';
+        el.innerHTML = `<span class="left"><span class="cat-icon">+</span><span>${item.name}</span></span>`;
+        el.onclick = async () => {
+          await createCategory(item.name, parentGroup ? parentGroup.id : null, item.id);
+          await afterAdd();
+        };
+        categoryListEl.appendChild(el);
+      });
+    }
+
+    const customLabel = document.createElement('div');
+    customLabel.style.cssText = 'font-size:12px;color:var(--text-dim);margin:14px 4px 6px 4px;';
+    customLabel.textContent = 'Своё название';
+    categoryListEl.appendChild(customLabel);
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'Например: Автосервис';
+    input.style.marginBottom = '8px';
+    categoryListEl.appendChild(input);
+
+    const createBtn = document.createElement('button');
+    createBtn.className = 'history-btn';
+    createBtn.textContent = 'Создать';
+    createBtn.onclick = async () => {
+      const name = input.value.trim();
+      if (!name) {
+        tg.showAlert('Введи название');
+        return;
+      }
+      await createCategory(name, parentGroup ? parentGroup.id : null, null);
+      await afterAdd();
+    };
+    categoryListEl.appendChild(createBtn);
+  }
+
+  async function openSheet(name) {
     document.getElementById('overlay-' + name).classList.add('open');
+    if (name === 'category') {
+      categoryListEl.innerHTML = '<div class="state-msg">Загрузка…</div>';
+      await categoriesLoadPromise;
+      renderCategoryGroups();
+    }
+    if (name === 'account') {
+      accountListEl.innerHTML = '<div class="state-msg">Загрузка…</div>';
+      await fetchAccounts();
+    }
   }
   function closeSheet(name) {
     document.getElementById('overlay-' + name).classList.remove('open');
@@ -628,7 +728,6 @@
   }
 
   // ---- Аналитика: подключение к серверу ----
-  const API_BASE = 'https://api.ostatka.uz';
 
   function formatMoney(n) {
     return Math.round(n).toLocaleString('ru-RU');
