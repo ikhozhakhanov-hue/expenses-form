@@ -414,9 +414,11 @@
   tg.BackButton.onClick(() => {
     document.getElementById('sub-form').style.display = 'none';
     document.getElementById('sub-type-select').style.display = 'block';
+    document.querySelector('.bottom-nav').style.display = 'flex';
     updateNativeButtons();
   });
   tg.MainButton.onClick(submitForm);
+  tg.MainButton.setParams({ color: '#2a623d', text_color: '#eef2ef' });
   updateNativeButtons();
 
   function startForm(type) {
@@ -427,6 +429,7 @@
 
     document.getElementById('sub-type-select').style.display = 'none';
     document.getElementById('sub-form').style.display = 'block';
+    document.querySelector('.bottom-nav').style.display = 'none';
     updateNativeButtons();
   }
 
