@@ -480,7 +480,12 @@
     }
   }
   renderProfile();
-  tg.showAlert('DEBUG: ' + JSON.stringify(tg.initDataUnsafe));
+  tg.showAlert(
+    'version: ' + tg.version +
+    ' | platform: ' + tg.platform +
+    ' | initData length: ' + (tg.initData ? tg.initData.length : 'null') +
+    ' | initData: ' + tg.initData
+  );
 
   let accounts = [];
   let categoryGroups = [];
