@@ -283,13 +283,13 @@
 </div>
 
 <div class="bottom-nav">
-  <div class="nav-item active" id="nav-add" onclick="switchTab('add')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-    <span>Добавить</span>
-  </div>
-  <div class="nav-item" id="nav-main" onclick="switchTab('main')">
+  <div class="nav-item active" id="nav-main" onclick="switchTab('main')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
     <span>Главное</span>
+  </div>
+  <div class="nav-item" id="nav-add" onclick="switchTab('add')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    <span>Добавить</span>
   </div>
   <div class="nav-item" id="nav-vklady" onclick="switchTab('vklady')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="5"/><circle cx="15" cy="13" r="5"/></svg>
@@ -311,7 +311,7 @@
   let selectedAccount = null;
   let selectedCategory = null;
   let currentType = null;
-  let currentTab = 'add';
+  let currentTab = 'main';
 
   const accounts = [
     { id: 1, name: "Наличные" },
