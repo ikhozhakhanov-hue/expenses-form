@@ -49,6 +49,57 @@
   }
   .placeholder-box .icon { font-size: 28px; margin-bottom: 10px; opacity: 0.6; }
 
+  .history-btn {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background-color: var(--surface);
+    color: var(--accent-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+  }
+  .history-btn svg { width: 17px; height: 17px; }
+  .history-btn:active { opacity: 0.8; }
+
+  .report-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 13px 14px;
+    border-radius: 12px;
+    background-color: var(--surface);
+    margin-bottom: 8px;
+    box-shadow: var(--shadow);
+  }
+  .report-row .cat-name { font-size: 14px; color: var(--text); }
+  .report-row .cat-total { font-size: 15px; font-weight: 600; }
+  .report-row .cat-total.expense { color: var(--crimson-light); }
+  .report-row .cat-total.income { color: var(--accent-light); }
+
+  .history-row {
+    padding: 12px 14px;
+    border-radius: 12px;
+    background-color: var(--surface);
+    margin-bottom: 8px;
+    box-shadow: var(--shadow);
+  }
+  .history-row .top-line { display: flex; justify-content: space-between; align-items: center; }
+  .history-row .desc { font-size: 15px; color: var(--text); }
+  .history-row .amount { font-size: 15px; font-weight: 600; }
+  .history-row .amount.expense { color: var(--crimson-light); }
+  .history-row .amount.income { color: var(--accent-light); }
+  .history-row .meta { font-size: 12px; color: var(--text-dim); margin-top: 3px; }
+
+  .state-msg { text-align: center; padding: 30px 10px; color: var(--text-dim); font-size: 14px; }
+
   .type-card {
     display: flex;
     align-items: center;
@@ -258,14 +309,28 @@
 
 <!-- Вкладка: Аналитика -->
 <div class="tab" id="tab-analytics">
-  <div class="page-header">
-    <h1>Аналитика</h1>
-    <p class="hint">Отчёты и графики</p>
+
+  <div id="analytics-report">
+    <div class="page-header">
+      <h1>Аналитика</h1>
+      <p class="hint">Расходы по категориям в этом месяце</p>
+    </div>
+    <button class="history-btn" onclick="showHistory()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+      История операций
+    </button>
+    <div id="report-list"></div>
   </div>
-  <div class="placeholder-box">
-    <div class="icon">📊</div>
-    <div>Раздел в разработке</div>
+
+  <div id="analytics-history" style="display:none;">
+    <div class="back-row" onclick="showReport()">‹ Назад к аналитике</div>
+    <div class="page-header" style="padding-top:0;">
+      <h1>История</h1>
+      <p class="hint">Последние операции</p>
+    </div>
+    <div id="history-list"></div>
   </div>
+
 </div>
 
 <div class="overlay" id="overlay-account" onclick="closeSheet('account', event)">
@@ -388,6 +453,11 @@
     if (tabName === 'add') {
       document.getElementById('sub-type-select').style.display = 'block';
       document.getElementById('sub-form').style.display = 'none';
+    }
+
+    if (tabName === 'analytics') {
+      showReport(); // всегда открываем аналитику с экрана отчёта, не истории
+      loadReport();
     }
 
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -514,6 +584,79 @@
       description: document.getElementById('description').value
     };
     tg.sendData(JSON.stringify(data));
+  }
+
+  // ---- Аналитика: подключение к серверу ----
+  const API_BASE = 'https://api.ostatka.uz';
+
+  function formatMoney(n) {
+    return Math.round(n).toLocaleString('ru-RU');
+  }
+
+  function showReport() {
+    document.getElementById('analytics-report').style.display = 'block';
+    document.getElementById('analytics-history').style.display = 'none';
+  }
+
+  function showHistory() {
+    document.getElementById('analytics-report').style.display = 'none';
+    document.getElementById('analytics-history').style.display = 'block';
+    loadHistory();
+  }
+
+  async function loadReport() {
+    const el = document.getElementById('report-list');
+    el.innerHTML = '<div class="state-msg">Загрузка…</div>';
+    try {
+      const res = await fetch(`${API_BASE}/report`);
+      const rows = await res.json();
+      if (!rows.length) {
+        el.innerHTML = '<div class="state-msg">Пока нет операций за этот месяц</div>';
+        return;
+      }
+      el.innerHTML = '';
+      rows.forEach(row => {
+        const kindClass = row.total < 0 ? 'expense' : 'income';
+        const div = document.createElement('div');
+        div.className = 'report-row';
+        div.innerHTML = `
+          <span class="cat-name">${row.category_name}</span>
+          <span class="cat-total ${kindClass}">${row.total > 0 ? '+' : ''}${formatMoney(row.total)}</span>
+        `;
+        el.appendChild(div);
+      });
+    } catch (err) {
+      el.innerHTML = '<div class="state-msg">Сервер недоступен. Включи ноутбук и попробуй ещё раз.</div>';
+    }
+  }
+
+  async function loadHistory() {
+    const el = document.getElementById('history-list');
+    el.innerHTML = '<div class="state-msg">Загрузка…</div>';
+    try {
+      const res = await fetch(`${API_BASE}/last-transactions`);
+      const rows = await res.json();
+      if (!rows.length) {
+        el.innerHTML = '<div class="state-msg">Операций пока нет</div>';
+        return;
+      }
+      el.innerHTML = '';
+      rows.forEach(row => {
+        const kindClass = row.amount < 0 ? 'expense' : 'income';
+        const div = document.createElement('div');
+        div.className = 'history-row';
+        div.innerHTML = `
+          <div class="top-line">
+            <span class="desc">${row.description || row.category_name}</span>
+            <span class="amount ${kindClass}">${row.amount > 0 ? '+' : ''}${formatMoney(row.amount)}</span>
+          </div>
+          <div class="meta">${row.category_name} · ${row.account_name} · ${row.txn_date}</div>
+        `;
+        el.appendChild(div);
+      });
+    } catch (err) {
+      el.innerHTML = '<div class="state-msg">Сервер недоступен. Включи ноутбук и попробуй ещё раз.</div>';
+    }
   }
 </script>
 
