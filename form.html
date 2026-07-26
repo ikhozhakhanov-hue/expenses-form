@@ -454,38 +454,30 @@
   let currentType = null;
   let currentTab = 'main';
 
-  const userId = tg.initDataUnsafe?.user?.id;
+  const urlParams = new URLSearchParams(window.location.search);
+  const userId = urlParams.get('user_id') || tg.initDataUnsafe?.user?.id;
   const API_BASE = 'https://api.ostatka.uz';
 
   function renderProfile() {
-    const user = tg.initDataUnsafe?.user;
     const nameEl = document.getElementById('profile-name');
     const usernameEl = document.getElementById('profile-username');
     const avatarEl = document.getElementById('profile-avatar');
 
-    if (!user) {
+    const firstName = urlParams.get('first_name') || tg.initDataUnsafe?.user?.first_name;
+    const username = urlParams.get('username') || tg.initDataUnsafe?.user?.username;
+
+    if (!firstName && !username) {
       nameEl.textContent = 'Гость';
       usernameEl.textContent = '';
+      avatarEl.textContent = '?';
       return;
     }
 
-    const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ');
-    nameEl.textContent = fullName || 'Без имени';
-    usernameEl.textContent = user.username ? '@' + user.username : '';
-
-    if (user.photo_url) {
-      avatarEl.innerHTML = `<img src="${user.photo_url}" alt="">`;
-    } else {
-      avatarEl.textContent = (user.first_name || '?').charAt(0).toUpperCase();
-    }
+    nameEl.textContent = firstName || 'Без имени';
+    usernameEl.textContent = username ? '@' + username : '';
+    avatarEl.textContent = (firstName || '?').charAt(0).toUpperCase();
   }
   renderProfile();
-  tg.showAlert(
-    'version: ' + tg.version +
-    ' | platform: ' + tg.platform +
-    ' | initData length: ' + (tg.initData ? tg.initData.length : 'null') +
-    ' | initData: ' + tg.initData
-  );
 
   let accounts = [];
   let categoryGroups = [];
