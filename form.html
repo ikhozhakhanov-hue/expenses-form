@@ -805,7 +805,7 @@
     const el = document.getElementById('report-list');
     el.innerHTML = '<div class="state-msg">Загрузка…</div>';
     try {
-      const res = await fetch(`${API_BASE}/report`);
+      const res = await fetch(`${API_BASE}/report?user_id=${userId}`);
       const rows = await res.json();
       if (!rows.length) {
         el.innerHTML = '<div class="state-msg">Пока нет операций за этот месяц</div>';
@@ -831,7 +831,7 @@
     const el = document.getElementById('history-list');
     el.innerHTML = '<div class="state-msg">Загрузка…</div>';
     try {
-      const res = await fetch(`${API_BASE}/last-transactions`);
+      const res = await fetch(`${API_BASE}/last-transactions?user_id=${userId}`);
       const rows = await res.json();
       if (!rows.length) {
         el.innerHTML = '<div class="state-msg">Операций пока нет</div>';
