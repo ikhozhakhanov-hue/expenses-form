@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Мои расходы</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   * { box-sizing: border-box; }
   :root {
@@ -958,12 +958,19 @@
   }
 
   async function loadTimeseries() {
+    let data;
     try {
       const res = await fetch(`${API_BASE}/analytics/timeseries?user_id=${userId}&mode=${periodMode}&offset=${periodOffset}`);
-      const data = await res.json();
-      renderTimeseries(data);
+      data = await res.json();
     } catch (err) {
       document.getElementById('period-range').textContent = 'Сервер недоступен';
+      return;
+    }
+    try {
+      renderTimeseries(data);
+    } catch (err) {
+      document.getElementById('period-range').textContent = 'Ошибка построения графика';
+      console.error('renderTimeseries failed:', err);
     }
   }
 
@@ -1034,12 +1041,18 @@
   }
 
   async function loadCategoryBreakdown() {
+    let rows;
     try {
       const res = await fetch(`${API_BASE}/analytics/category-breakdown?user_id=${userId}&kind=${pieKind}&mode=${periodMode}&offset=${periodOffset}`);
-      const rows = await res.json();
-      renderPie(rows);
+      rows = await res.json();
     } catch (err) {
       renderPie([]);
+      return;
+    }
+    try {
+      renderPie(rows);
+    } catch (err) {
+      console.error('renderPie failed:', err);
     }
   }
 
