@@ -766,7 +766,7 @@
     document.getElementById('overlay-' + name).classList.remove('open');
   }
 
-  function submitForm() {
+  async function submitForm() {
     if (!selectedAccount || !selectedCategory) {
       tg.showAlert('Выбери счёт и категорию');
       return;
@@ -779,9 +779,30 @@
       amount: signedAmount,
       account_id: selectedAccount,
       category_id: selectedCategory,
-      description: document.getElementById('description').value
+      description: document.getElementById('description').value,
+      user_id: userId,
+      first_name: urlParams.get('first_name') || tg.initDataUnsafe?.user?.first_name
     };
-    tg.sendData(JSON.stringify(data));
+
+    // Приложение, открытое через Menu Button, не может отправлять данные боту
+    // через sendData() — в этом случае initData доступен (в отличие от кнопки
+    // клавиатуры), и по его наличию понятно, каким способом форма открыта.
+    const openedViaMenuOrInline = !!tg.initDataUnsafe?.user;
+
+    if (openedViaMenuOrInline) {
+      try {
+        await fetch(`${API_BASE}/transactions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        tg.close();
+      } catch (err) {
+        tg.showAlert('Не удалось сохранить — проверь, что сервер включён.');
+      }
+    } else {
+      tg.sendData(JSON.stringify(data));
+    }
   }
 
   // ---- Аналитика: подключение к серверу ----
