@@ -398,12 +398,6 @@
     <label for="amount">Сумма</label>
     <input type="number" id="amount" placeholder="0">
 
-    <label>Счёт</label>
-    <div class="picker-btn" onclick="openSheet('account')">
-      <span id="account-label" class="placeholder">Выбрать счёт</span>
-      <span class="arrow">›</span>
-    </div>
-
     <label>Категория</label>
     <div class="picker-btn" onclick="openSheet('category')">
       <span id="category-label" class="placeholder">Выбрать категорию</span>
@@ -492,13 +486,6 @@
 
 </div>
 
-<div class="overlay" id="overlay-account" onclick="closeSheet('account', event)">
-  <div class="sheet" onclick="event.stopPropagation()">
-    <div class="sheet-title">Счёт</div>
-    <div id="account-list"></div>
-  </div>
-</div>
-
 <div class="overlay" id="overlay-category" onclick="closeSheet('category', event)">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sheet-title" id="category-sheet-title">Категория</div>
@@ -571,6 +558,7 @@
   let accounts = [];
   let categoryGroups = [];
   let categoriesLoadPromise = null;
+  let accountsLoadPromise = null;
 
   // ---- Нижняя навигация (Добавить / Главное / Вклады / Аналитика) ----
   function switchTab(tabName) {
@@ -626,6 +614,7 @@
     document.getElementById('category-label').classList.add('placeholder');
 
     categoriesLoadPromise = fetchCategories(type);
+    accountsLoadPromise = fetchAccounts();
 
     document.getElementById('sub-type-select').style.display = 'none';
     document.getElementById('sub-form').style.display = 'block';
@@ -640,30 +629,10 @@
     } catch (err) {
       accounts = [];
     }
-    renderAccountList();
+    // Поле выбора счёта убрано из формы — используем автоматически
+    // первый счёт пользователя, чтобы не усложнять быстрое добавление траты.
+    selectedAccount = accounts.length ? accounts[0].id : null;
   }
-
-  function renderAccountList() {
-    accountListEl.innerHTML = '';
-    if (!accounts.length) {
-      accountListEl.innerHTML = '<div class="state-msg">Не удалось загрузить счета</div>';
-      return;
-    }
-    accounts.forEach(acc => {
-      const el = document.createElement('div');
-      el.className = 'cat-item';
-      el.innerHTML = `<span class="left"><span>${acc.name}</span></span>`;
-      el.onclick = () => {
-        selectedAccount = acc.id;
-        document.getElementById('account-label').textContent = acc.name;
-        document.getElementById('account-label').classList.remove('placeholder');
-        closeSheet('account');
-      };
-      accountListEl.appendChild(el);
-    });
-  }
-
-  const accountListEl = document.getElementById('account-list');
 
   async function fetchCategories(kind) {
     try {
@@ -853,18 +822,15 @@
       await categoriesLoadPromise;
       renderCategoryGroups();
     }
-    if (name === 'account') {
-      accountListEl.innerHTML = '<div class="state-msg">Загрузка…</div>';
-      await fetchAccounts();
-    }
   }
   function closeSheet(name) {
     document.getElementById('overlay-' + name).classList.remove('open');
   }
 
   async function submitForm() {
+    await accountsLoadPromise;
     if (!selectedAccount || !selectedCategory) {
-      tg.showAlert('Выбери счёт и категорию');
+      tg.showAlert(!selectedCategory ? 'Выбери категорию' : 'Не удалось определить счёт — попробуй ещё раз');
       return;
     }
     const rawAmount = parseFloat(document.getElementById('amount').value) || 0;
